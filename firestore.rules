@@ -1,0 +1,56 @@
+rules_version = '2';
+// 貼到 Firebase Console → Firestore Database → 規則（Rules）→ 發布
+// App 用「匿名登入」＋「每人 4 位數密碼」：
+//   - 每支手機第一次選名字時要輸入密碼，通過後這支手機才能新增/修改那個人的紀錄
+//   - 密碼只存雜湊值，而且任何人都讀不到（pins、claims 兩個集合 read: false）
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function pin(pid) { return get(/databases/$(database)/documents/pins/$(pid)).data.hash; }
+    // 這支手機（匿名帳號）是否已用正確密碼登入過這個人
+    function owns(pid) {
+      return signedIn()
+        && get(/databases/$(database)/documents/claims/$(pid + '_' + request.auth.uid)).data.hash == pin(pid);
+    }
+
+    // 人員名單：大家都能看、新增、改名、停用；不能刪除
+    match /people/{id} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 12;
+      allow delete: if false;
+    }
+
+    // 密碼雜湊：只能建立一次；修改時必須附上目前的密碼雜湊（old）
+    match /pins/{pid} {
+      allow read: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['hash'])
+        && request.resource.data.hash is string;
+      allow update: if signedIn()
+        && request.resource.data.old == resource.data.hash
+        && request.resource.data.hash is string;
+      allow delete: if false;
+    }
+
+    // 手機驗證紀錄：文件 ID＝人員ID_匿名帳號ID，必須帶正確的密碼雜湊才能寫入
+    match /claims/{cid} {
+      allow read: if false;
+      allow create, update: if signedIn()
+        && cid == request.resource.data.pid + '_' + request.auth.uid
+        && request.resource.data.hash == pin(request.resource.data.pid);
+      allow delete: if false;
+    }
+
+    // 出勤紀錄：大家都能讀（匯出月報表用），但只有通過密碼驗證的手機能改自己的
+    match /attendance/{id} {
+      allow read: if signedIn();
+      allow create, update: if owns(request.resource.data.pid)
+        && id == request.resource.data.pid + '_' + request.resource.data.date;
+      allow delete: if owns(resource.data.pid);
+    }
+  }
+}

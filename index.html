@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="出勤打卡">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>出勤打卡</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1f2933; --sub:#6b7280; --line:#e5e7eb;
+  --pri:#0f766e; --pri2:#14b8a6; --priSoft:#e6f4f2; --danger:#dc2626; --warn:#b45309;
+  --r:16px; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05);
+  --bar:rgba(255,255,255,.94); --wk:#fafafa; --mute:#cbd5e1; --ink2:#111827; --out:#334155;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --card:#18201f; --ink:#e6ecea; --sub:#94a3a0; --line:#26302e; --pri:#2dd4bf; --pri2:#0f766e; --priSoft:#14302c;
+  --danger:#f87171; --bar:rgba(24,32,31,.94); --wk:#141b1a; --mute:#475569; --ink2:#e6ecea; --out:#475569; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --card:#18201f; --ink:#e6ecea; --sub:#94a3a0; --line:#26302e; --pri:#2dd4bf; --pri2:#0f766e; --priSoft:#14302c;
+  --danger:#f87171; --bar:rgba(24,32,31,.94); --wk:#141b1a; --mute:#475569; --ink2:#e6ecea; --out:#475569; color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-size:16px}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select{font:inherit}
+.wrap{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 92px)}
+.top{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px}
+.top .hi{font-size:14px;color:var(--sub)}
+.top .name{font-size:20px;font-weight:700}
+.link{color:var(--pri);font-size:14px;padding:8px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+.hero{background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;text-align:center;padding:22px 18px}
+.hero .date{opacity:.9;font-size:15px}
+.hero .clock{font-size:52px;font-weight:700;letter-spacing:1px;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:4px}
+.times{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.times .t{background:var(--bg);border-radius:12px;padding:12px;text-align:center}
+.times label{display:block;font-size:13px;color:var(--sub)}
+.times b{font-size:22px;font-variant-numeric:tabular-nums}
+.sec{font-size:13px;color:var(--sub);margin:4px 2px 8px;font-weight:600;letter-spacing:.5px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 14px;border-radius:999px;background:var(--bg);border:1.5px solid transparent;font-size:15px}
+.chip.on{background:var(--card);border-color:var(--c,var(--pri));color:var(--c,var(--pri));font-weight:700}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.big{padding:18px 10px;border-radius:14px;font-size:18px;font-weight:700;color:#fff;background:#0f766e}
+.big.out{background:var(--out)}
+.big.full{grid-column:1/-1}
+.big:active{transform:scale(.98)}
+.big .s{display:block;font-size:12px;font-weight:500;opacity:.85;margin-top:2px}
+.badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--card));font-weight:600}
+.mnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mnav b{font-size:18px}
+.mnav button{width:40px;height:40px;border-radius:50%;background:var(--card);box-shadow:var(--shadow);font-size:20px}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.stat{flex:1;min-width:72px;background:var(--card);border-radius:12px;padding:10px;text-align:center;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:20px}.stat span{font-size:12px;color:var(--sub)}
+.days{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.day{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.day:last-child{border-bottom:0}
+.day .d{width:46px;flex:none}
+.day .d b{font-size:17px}.day .d span{font-size:12px;color:var(--sub);margin-left:3px}
+.day .mid{flex:1;font-variant-numeric:tabular-nums}
+.day.wk{background:var(--wk)}.day.wk .d b{color:#9ca3af}
+.day.today{box-shadow:inset 3px 0 0 var(--pri)}
+.day.future{opacity:.5}
+.miss{color:var(--danger);font-size:13px}
+.tot{float:right;font-weight:700;color:var(--pri);font-size:14px}.tot.short{color:var(--danger)}
+.arrow{color:var(--mute)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--bar);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+.tabbar button{flex:1;max-width:180px;padding:10px 0 8px;font-size:12px;color:var(--sub);display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabbar button.on{color:var(--pri);font-weight:700}
+.tabbar svg{width:24px;height:24px}
+.login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:24px;max-width:420px;margin:0 auto}
+.login h1{font-size:28px;margin:0 0 4px}.login p{color:var(--sub);margin:0 0 24px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:var(--sub);margin-bottom:6px}
+.field input,.field select{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:16px}
+.field input:focus{outline:none;border-color:var(--pri)}
+.note{font-size:13px;color:var(--sub);background:var(--priSoft);border-radius:12px;padding:10px 12px;margin-top:16px;line-height:1.5}
+.err{color:var(--danger);font-size:14px;min-height:20px;margin:4px 0}
+.sheet-bg{position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:10;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom) + 18px);animation:up .2s}
+.sheet h3{margin:0 0 14px;font-size:19px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ghost{padding:14px;border-radius:12px;background:var(--bg);font-weight:600}
+.danger{color:var(--danger)}
+@keyframes up{from{transform:translateY(40px);opacity:0}}@keyframes fade{from{opacity:0}}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 90px);transform:translateX(-50%);background:var(--ink2);color:var(--bg);
+  padding:10px 18px;border-radius:999px;font-size:14px;z-index:20;animation:fade .2s;white-space:nowrap}
+table.mini{width:100%;border-collapse:collapse;font-size:14px}
+table.mini th,table.mini td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:center}
+table.mini th{font-size:12px;color:var(--sub);font-weight:600}
+table.mini td:first-child,table.mini th:first-child{text-align:left}
+.center{display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--sub)}
+.demo{position:fixed;top:env(safe-area-inset-top);right:8px;font-size:11px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;z-index:4}
+.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:18px}
+.nameBtn{padding:16px 8px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-size:18px;font-weight:600}
+.nameBtn:active{transform:scale(.97)}
+.addRow{display:flex;gap:8px}.addRow input{flex:1;min-width:0;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:16px}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}.prow:last-of-type{border-bottom:0}
+.prow.off span:first-child{color:var(--sub)}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:4px}
+.seg button{padding:10px 0;border-radius:9px;font-size:15px;color:var(--sub)}
+.seg button.on{background:var(--card);color:var(--c);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.pin{width:12rem;max-width:100%;text-align:center;font-size:32px;letter-spacing:.6em;padding:12px 0 12px .6em;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink)}
+.pin:focus{outline:none;border-color:var(--pri)}
+</style>
+</head>
+<body>
+<div id="app"><div class="center">載入中…</div></div>
+<script src="config.js" onerror="void 0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js" defer></script>
+<script type="module">
+// ================== 基本設定 ==================
+const CFG = window.APP_CONFIG || {};
+const BACKEND = CFG.backend || (CFG.firebase?.apiKey ? 'firebase' : CFG.m365?.flowUrl ? 'm365' : 'demo');
+const DEMO = BACKEND === 'demo' || (BACKEND === 'firebase' && !CFG.firebase?.apiKey) || (BACKEND === 'm365' && !CFG.m365?.flowUrl);
+const TYPES = [
+  { k: '出勤',     short: '',     c: '#0f766e', fill: null },
+  { k: '休假',     short: '休假', c: '#2563eb', fill: 'DBEAFE' },
+  { k: '事假',     short: '事假', c: '#b45309', fill: 'FEF3C7' },
+  { k: '病假',     short: '病假', c: '#dc2626', fill: 'FEE2E2' },
+  { k: '特休',     short: '特休', c: '#16a34a', fill: 'DCFCE7' },
+  { k: '公假',     short: '公假', c: '#7c3aed', fill: 'EDE9FE' },
+  { k: '國定假日', short: '國定', c: '#ea580c', fill: 'FFEDD5' },
+  { k: '天災假',   short: '天災', c: '#0891b2', fill: 'CFFAFE' },
+];
+const T = Object.fromEntries(TYPES.map(t => [t.k, t]));
+// 總表格子文字：國定假日 / 天災假 有備註就顯示備註（例：端午、颱風假）
+const cellLabel = r => (['國定假日', '天災假'].includes(r.type) && r.note) ? r.note : (T[r.type]?.short || r.type);
+const WD = ['日', '一', '二', '三', '四', '五', '六'];
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const mkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const daysIn = m => { const [y, mo] = m.split('-').map(Number); return new Date(y, mo, 0).getDate(); };
+const shiftMonth = (m, n) => { const [y, mo] = m.split('-').map(Number); return mkey(new Date(y, mo - 1 + n, 1)); };
+const toMin = s => { if (!s) return null; const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+const LUNCH = [toMin(CFG.lunchStart || '12:30'), toMin(CFG.lunchEnd || '13:30')];
+// 半天假：可請半天的假別、上午班／下午班時間
+const HALF = CFG.halfDayTypes || ['休假', '事假', '病假', '特休', '公假', '天災假'];
+const AM_SHIFT = CFG.amShift || ['08:30', '12:30'], PM_SHIFT = CFG.pmShift || ['13:30', '17:30'];
+const PART_TEXT = { am: '上午', pm: '下午' };
+const MIN_DAY = (CFG.dailyHours || 8) * 60, MAX_DAY = (CFG.maxDailyHours || 8.5) * 60;
+const STD_IN = CFG.standardIn || '08:30', STD_OUT = CFG.standardOut || '17:30';
+// 每日工時 = 下班 - 上班 - 與午休重疊的時間
+const workMins = (i, o) => { const a = toMin(i), b = toMin(o); if (a == null || b == null || b <= a) return null;
+  return b - a - Math.max(0, Math.min(b, LUNCH[1]) - Math.max(a, LUNCH[0])); };
+const badMins = m => m != null && (m < MIN_DAY || m > MAX_DAY);
+// 半天假的時數範圍是全天的一半（例 4:00–4:15）
+const badRec = (r, m) => m != null && (r?.part ? (m < MIN_DAY / 2 || m > MAX_DAY / 2) : badMins(m));
+const rangeText = r => r?.part ? `${fmtMins(MIN_DAY / 2)}–${fmtMins(MAX_DAY / 2)}` : `${fmtMins(MIN_DAY)}–${fmtMins(MAX_DAY)}`;
+const dispLabel = r => cellLabel(r) + (r.part ? `（${PART_TEXT[r.part]}）` : '');
+// 請假時段選擇列（全天／上午／下午），attr = 點選時用的 data 屬性名稱
+const segHtml = (part, color, attr) => `<div class="sec" style="margin-top:4px">請假時段</div>
+  <div class="seg">${[['', '全天'], ['am', '上午'], ['pm', '下午']].map(([k, t]) =>
+    `<button type="button" class="${(part || '') === k ? 'on' : ''}" style="--c:${color}" ${attr}="${k || 'full'}">${t}</button>`).join('')}</div>`;
+const partTimes = part => part === 'am' ? { in: PM_SHIFT[0], out: PM_SHIFT[1] } : part === 'pm' ? { in: AM_SHIFT[0], out: AM_SHIFT[1] } : { in: '', out: '' };
+const fmtMins = m => m == null ? '' : `${Math.floor(m / 60)}:${pad(m % 60)}`;
+const isWeekend = ds => { const g = new Date(ds + 'T00:00').getDay(); return g === 0 || g === 6; };
+const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+const ME_KEY = 'attendance-me';
+// 示範模式的資料存在手機瀏覽器；名單一改就換一組新的示範資料
+const DEMO_KEY_PREFIX = 'attendance-demo-';
+const DEMO_KEY = DEMO_KEY_PREFIX + 'v3-' + [...JSON.stringify(CFG.demoNames || [])].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36);
+const newId = () => 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+// 雲端回傳的資料統一整理（Excel 可能把時間/日期轉成數字）
+const normTime = v => { if (v == null || v === '') return ''; v = String(v).trim();
+  if (/^0?\.\d+$/.test(v)) { const m = Math.round(parseFloat(v) * 1440); return `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`; }
+  const x = v.match(/^(\d{1,2}):(\d{2})/); return x ? `${pad(+x[1])}:${x[2]}` : ''; };
+const normDate = v => { v = String(v ?? '').trim();
+  if (/^\d{5}(\.\d+)?$/.test(v)) return new Date(Date.UTC(1899, 11, 30) + Math.floor(+v) * 864e5).toISOString().slice(0, 10);
+  const x = v.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); return x ? `${x[1]}-${pad(+x[2])}-${pad(+x[3])}` : v; };
+const normRec = r => { const date = normDate(r.date);
+  return { pid: String(r.pid ?? ''), name: String(r.name ?? ''), date, month: date.slice(0, 7), type: r.type || '出勤',
+    in: normTime(r.in), out: normTime(r.out), note: String(r.note ?? ''), part: ['am', 'pm'].includes(r.part) ? r.part : '' }; };
+const normPerson = p => ({ id: String(p.id), name: String(p.name ?? ''), order: +p.order || 0,
+  active: !['false', '0', 'no', ''].includes(String(p.active ?? 'true').toLowerCase()),
+  hasPin: p.hasPin === true || String(p.hasPin).toLowerCase() === 'true' || !!p.pinHash, pinHash: p.pinHash ? String(p.pinHash) : '' });
+// 密碼只存雜湊值（SHA-256），不存原始 4 位數字
+async function pinHash(pid, pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${pid}:${pin}:attendance-pin-v1`));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+const denied = e => e?.code === 'permission-denied' || /permission/i.test(e?.message || '');
+const byOrder = (a, b) => (a.order - b.order) || a.name.localeCompare(b.name, 'zh-Hant');
+
+// ================== 資料層 1：Firebase（匿名登入 + Firestore） ==================
+async function firebaseStore() {
+  const v = '10.12.2', base = `https://www.gstatic.com/firebasejs/${v}/`;
+  const [A, AU, F] = await Promise.all([
+    import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+  const app = A.initializeApp(CFG.firebase);
+  const auth = AU.getAuth(app);
+  await new Promise((res, rej) => {
+    const off = AU.onAuthStateChanged(auth, u => { if (u) { off(); res(); } });
+    AU.signInAnonymously(auth).catch(rej);
+  });
+  let db;
+  try { db = F.initializeFirestore(app, { localCache: F.persistentLocalCache() }); } catch { db = F.getFirestore(app); }
+  const { doc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp } = F;
+  const uid = () => auth.currentUser.uid;
+  const claim = (pid, hash) => setDoc(doc(db, 'claims', `${pid}_${uid()}`), { pid, hash });
+  return {
+    // 第一次設定密碼：pins/{pid} 只能建立一次；同時把這支手機登記為已驗證
+    setPin: async (pid, hash) => {
+      try { await setDoc(doc(db, 'pins', pid), { hash }); } catch (e) { if (denied(e)) return 'exists'; throw e; }
+      await claim(pid, hash); await setDoc(doc(db, 'people', pid), { hasPin: true }, { merge: true }); return 'ok';
+    },
+    // 驗證密碼：資料庫規則會比對雜湊值，錯誤就拒絕寫入
+    verifyPin: async (pid, hash) => { try { await claim(pid, hash); return true; } catch (e) { if (denied(e)) return false; throw e; } },
+    changePin: async (pid, oldHash, newHash) => {
+      try { await updateDoc(doc(db, 'pins', pid), { hash: newHash, old: oldHash }); } catch (e) { if (denied(e)) return false; throw e; }
+      await claim(pid, newHash); return true;
+    },
+    listPeople: async () => (await getDocs(collection(db, 'people'))).docs.map(d => normPerson({ id: d.id, ...d.data() })),
+    savePerson: p => setDoc(doc(db, 'people', p.id), { name: p.name, active: p.active, order: p.order || 0 }, { merge: true }),
+    listMonth: async m => (await getDocs(query(collection(db, 'attendance'), where('month', '==', m)))).docs.map(d => normRec(d.data())),
+    save: r => setDoc(doc(db, 'attendance', `${r.pid}_${r.date}`), { ...r, updatedAt: serverTimestamp() }),
+    remove: (pid, date) => deleteDoc(doc(db, 'attendance', `${pid}_${date}`)),
+  };
+}
+
+// ================== 資料層 2：Microsoft 365（Power Automate → OneDrive Excel） ==================
+function m365Store() {
+  const url = CFG.m365.flowUrl;
+  const call = async body => {
+    // 用 text/plain 送出，避免瀏覽器先送 CORS 預檢（OPTIONS）
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`雲端回應錯誤（${res.status}）`);
+    const t = await res.text(); try { return t ? JSON.parse(t) : {}; } catch { return {}; }
+  };
+  const str = r => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? '' : String(v)]));
+  const person = p => call({ op: 'person', ...str({ id: p.id, name: p.name, active: p.active ? 'TRUE' : 'FALSE', order: p.order || 0, pinHash: p.pinHash || '' }) });
+  const find = async pid => ((await call({ op: 'load', month: mkey(new Date()) })).people || []).map(normPerson).find(p => p.id === pid);
+  return {
+    // M365 版的密碼在 App 端比對（Power Automate 不做檢查），只能防止同事誤用
+    setPin: async (pid, hash) => { const p = await find(pid); if (!p) throw new Error('找不到這個名字'); if (p.pinHash) return 'exists';
+      await person({ ...p, pinHash: hash }); return 'ok'; },
+    verifyPin: async (pid, hash) => (await find(pid))?.pinHash === hash,
+    changePin: async (pid, oldHash, newHash) => { const p = await find(pid); if (!p || p.pinHash !== oldHash) return false;
+      await person({ ...p, pinHash: newHash }); return true; },
+    listPeople: async () => ((await call({ op: 'load', month: mkey(new Date()) })).people || []).filter(p => p.id).map(normPerson),
+    savePerson: person,
+    listMonth: async m => ((await call({ op: 'load', month: m })).records || []).filter(r => r.pid).map(normRec).filter(r => r.month === m),
+    save: r => call({ op: 'save', ...str({ key: `${r.pid}_${r.date}`, pid: r.pid, name: r.name, date: r.date, month: r.month,
+      type: r.type, in: r.in, out: r.out, note: r.note, part: r.part || '', updatedAt: new Date().toISOString() }) }),
+    remove: (pid, date) => call({ op: 'delete', key: `${pid}_${date}` }),
+  };
+}
+
+// ================== 資料層 3：示範模式（只存在這台裝置） ==================
+function demoStore() {
+  const NAMES = Array.isArray(CFG.demoNames) && CFG.demoNames.length ? CFG.demoNames.map(String)
+    : ['王小明', '陳美玲', '林志豪', '張雅婷', '李建宏', '黃淑芬', '吳承翰', '蔡佩珊', '鄭宇軒', '劉建廷'];
+  const KEY = DEMO_KEY;
+  let mem = null;
+  const load = () => { if (mem) return mem; try { mem = JSON.parse(lsGet(KEY)); } catch {} return mem ||= seed(); };
+  const persist = () => lsSet(KEY, JSON.stringify(mem));
+  function seed() {
+    const names = NAMES;
+    const people = names.map((n, i) => ({ id: 'd' + i, name: n, active: true, order: i + 1 }));
+    const recs = {}; const today = new Date(); const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    let s = 11; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    for (const p of people) for (let d = new Date(start); d < today; d.setDate(d.getDate() + 1)) {
+      const ds = dkey(d); if (isWeekend(ds)) continue;
+      const x = rnd(); if (x < 0.03) continue;
+      const base = { pid: p.id, name: p.name, date: ds, month: ds.slice(0, 7), note: '' };
+      if (x > 0.95) recs[`${p.id}_${ds}`] = { ...base, type: ['特休', '病假', '事假', '休假'][Math.floor(rnd() * 4)], in: '', out: '' };
+      else { const a = 480 + Math.floor(rnd() * 31), b = a + 540 + Math.floor(rnd() * 31);
+        recs[`${p.id}_${ds}`] = { ...base, type: '出勤', in: `${pad(a / 60 | 0)}:${pad(a % 60)}`, out: `${pad(b / 60 | 0)}:${pad(b % 60)}` }; }
+    }
+    return { people, recs };
+  }
+  const pins = () => (load().pins ||= {});
+  return {
+    setPin: async (pid, hash) => { if (pins()[pid]) return 'exists'; pins()[pid] = hash;
+      const p = load().people.find(x => x.id === pid); if (p) p.hasPin = true; persist(); return 'ok'; },
+    verifyPin: async (pid, hash) => pins()[pid] === hash,
+    changePin: async (pid, oldHash, newHash) => { if (pins()[pid] !== oldHash) return false; pins()[pid] = newHash; persist(); return true; },
+    listPeople: async () => load().people.map(p => ({ ...p, hasPin: !!pins()[p.id] })),
+    savePerson: async p => { const s = load(), i = s.people.findIndex(x => x.id === p.id), q = { ...p }; delete q.pinHash;
+      i < 0 ? s.people.push(q) : (s.people[i] = q); persist(); },
+    listMonth: async m => Object.values(load().recs).filter(r => r.month === m).map(r => ({ ...r })),
+    save: async r => { load().recs[`${r.pid}_${r.date}`] = { ...r }; persist(); },
+    remove: async (pid, date) => { delete load().recs[`${pid}_${date}`]; persist(); },
+  };
+}
+
+// ================== 狀態 ==================
+const S = { store: null, me: null, people: [], tab: 'punch', month: mkey(new Date()), recs: {}, pickType: null, pickPart: '', adminMonth: mkey(new Date()) };
+const $app = document.getElementById('app');
+
+function ask(msg, ok = '確定') {
+  return new Promise(res => {
+    const bg = document.createElement('div'); bg.className = 'sheet-bg';
+    bg.innerHTML = `<div class="sheet"><h3 style="font-size:17px;line-height:1.5">${esc(msg)}</h3>
+      <div class="row2"><button class="ghost" data-no>取消</button><button class="big" style="padding:14px" data-yes>${esc(ok)}</button></div></div>`;
+    bg.addEventListener('click', e => { const y = e.target.closest('[data-yes]');
+      if (y || e.target === bg || e.target.closest('[data-no]')) { bg.remove(); res(!!y); } });
+    document.body.appendChild(bg);
+  });
+}
+function askText(title, value = '', ok = '儲存') {
+  return new Promise(res => {
+    const bg = document.createElement('div'); bg.className = 'sheet-bg';
+    bg.innerHTML = `<form class="sheet"><h3>${esc(title)}</h3>
+      <div class="field"><input id="askText" name="t" value="${esc(value)}" maxlength="12" required></div>
+      <div class="row2"><button type="button" class="ghost" data-no>取消</button><button class="big" style="padding:14px">${esc(ok)}</button></div></form>`;
+    bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-no]')) { bg.remove(); res(null); } });
+    bg.addEventListener('submit', e => { e.preventDefault(); const v = e.target.t.value.trim(); bg.remove(); res(v || null); });
+    document.body.appendChild(bg); setTimeout(() => bg.querySelector('input')?.focus(), 50);
+  });
+}
+function askPin(title, sub = '') {
+  return new Promise(res => {
+    const bg = document.createElement('div'); bg.className = 'sheet-bg';
+    bg.innerHTML = `<form class="sheet" style="text-align:center"><h3 style="margin-bottom:6px">${esc(title)}</h3>
+      ${sub ? `<div style="color:var(--sub);font-size:13px;margin-bottom:14px">${esc(sub)}</div>` : ''}
+      <input id="pinInput" name="p" class="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="4 位數密碼">
+      <div class="row2" style="margin-top:16px"><button type="button" class="ghost" data-no>取消</button><button class="big" style="padding:14px">確定</button></div></form>`;
+    const input = bg.querySelector('input');
+    const done = v => { bg.remove(); res(v); };
+    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); if (input.value.length === 4) done(input.value); });
+    bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-no]')) done(null); });
+    bg.addEventListener('submit', e => { e.preventDefault(); if (input.value.length === 4) done(input.value); else toast('請輸入 4 位數字'); });
+    document.body.appendChild(bg); setTimeout(() => input.focus(), 50);
+  });
+}
+function toast(msg) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+
+async function loadPeople() { S.people = (await S.store.listPeople()).sort(byOrder); }
+async function loadMonth(m) {
+  const list = (await S.store.listMonth(m)).filter(r => r.pid === S.me.id);
+  for (const k of Object.keys(S.recs)) if (k.startsWith(m)) delete S.recs[k];
+  list.forEach(r => S.recs[r.date] = r);
+}
+async function saveRec(date, patch) {
+  const old = S.recs[date] || { type: '出勤', in: '', out: '', note: '' };
+  const r = { ...old, ...patch, pid: S.me.id, name: S.me.name, date, month: date.slice(0, 7) };
+  S.recs[date] = r; render();
+  try { await S.store.save(r); }
+  catch (e) { toast(denied(e) ? '這支手機還沒通過密碼驗證，請按「切換使用者」重新輸入密碼' : '儲存失敗：' + (e.message || e)); }
+}
+
+// ================== 畫面 ==================
+const ICONS = {
+  punch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  rec: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  admin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 10h16M10 4v16"/></svg>',
+};
+
+function render() {
+  if (!S.me) return renderPicker();
+  const tabs = [['punch', '打卡'], ['rec', '出勤紀錄'], ['admin', '月報表']];
+  const body = S.tab === 'punch' ? viewPunch() : S.tab === 'rec' ? viewRec() : viewAdmin();
+  $app.innerHTML = `${DEMO ? '<div class="demo">示範模式</div>' : ''}
+  <div class="wrap">
+    <div class="top"><div><div class="hi">您好</div><div class="name">${esc(S.me.name)}</div></div>
+      <div><button class="link" data-act="chpin">修改密碼</button><button class="link" data-act="switch">切換使用者</button></div></div>
+    ${body}
+  </div>
+  <nav class="tabbar">${tabs.map(([k, l]) => `<button class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${ICONS[k]}${l}</button>`).join('')}</nav>`;
+  if (S.tab === 'admin') refreshAdmin();
+}
+
+function renderPicker() {
+  const list = S.people.filter(p => p.active);
+  $app.innerHTML = `<div class="login">
+    <h1>出勤打卡</h1><p>請點選你的名字，再輸入 4 位數密碼</p>
+    <div class="names">${list.map(p => `<button class="nameBtn" data-me="${esc(p.id)}">${esc(p.name)}</button>`).join('')
+      || '<div class="note" style="grid-column:1/-1;margin:0">名單還是空的，請先在下方加入自己的名字。</div>'}</div>
+    <form id="addForm" class="addRow">
+      <input id="newName" name="n" placeholder="名單裡沒有我？輸入名字加入" maxlength="12">
+      <button class="big" style="padding:12px 16px;font-size:16px">加入</button>
+    </form>
+    ${DEMO ? '<div class="note">目前為<b>示範模式</b>：名單和出勤資料都是範例，只存在這台裝置，可以放心亂按。<br><button class="link" style="padding:6px 0" data-act="resetdemo">重設示範資料</button></div>' : ''}
+  </div>`;
+}
+
+function viewPunch() {
+  const now = new Date(), today = dkey(now), r = S.recs[today] || {};
+  const pick = S.pickType || r.type || '出勤';
+  const leave = pick !== '出勤';
+  const part = HALF.includes(pick) ? (S.pickType ? S.pickPart : (r.part || '')) : '';
+  const tot = workMins(r.in, r.out);
+  const leaveBtn = !part ? `登記今日為「${pick}」<span class="s">${HALF.includes(pick) ? '整天請假' : '整天'}</span>`
+    : `登記今日${PART_TEXT[part]}「${pick}」<span class="s">${part === 'am' ? `下午 ${PM_SHIFT[0]}–${PM_SHIFT[1]}` : `上午 ${AM_SHIFT[0]}–${AM_SHIFT[1]}`} 上班，時間可再修改</span>`;
+  return `<div class="card hero"><div class="date">${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 星期${WD[now.getDay()]}</div>
+      <div class="clock" id="clock">${hm(now)}:${pad(now.getSeconds())}</div></div>
+    <div class="card">
+      <div class="times"><div class="t"><label>上班</label><b>${r.in || '--:--'}</b></div><div class="t"><label>下班</label><b>${r.out || '--:--'}</b></div>
+        <div class="t"><label>今日總計</label><b style="${badRec(r, tot) ? 'color:var(--danger)' : ''}">${fmtMins(tot) || '--:--'}</b></div></div>
+      ${r.type && r.type !== '出勤' ? `<div style="text-align:center;margin-top:10px"><span class="badge" style="--c:${T[r.type]?.c}">今日已登記：${esc(r.part ? PART_TEXT[r.part] + r.type : r.type)}${r.note ? '（' + esc(r.note) + '）' : ''}</span></div>` : ''}
+    </div>
+    <div class="card">
+      <div class="sec">今日狀態</div>
+      <div class="chips">${TYPES.map(t => `<button class="chip ${pick === t.k ? 'on' : ''}" style="--c:${t.c}" data-pick="${t.k}">${t.k}</button>`).join('')}</div>
+      ${leave && HALF.includes(pick) ? segHtml(part, T[pick].c, 'data-part') : ''}
+      <div class="btns">${leave
+        ? `<button class="big full" style="background:${T[pick].c}" data-act="leave">${leaveBtn}</button>`
+        : `<button class="big" data-act="in">上班打卡<span class="s">${r.in ? '已打卡 ' + r.in : '按下記錄現在時間'}</span></button>
+           <button class="big out" data-act="out">下班打卡<span class="s">${r.out ? '已打卡 ' + r.out : '按下記錄現在時間'}</span></button>`}
+      </div>
+    </div>
+    <div class="note">忘記打卡？到下方「出勤紀錄」點選該日期即可補上。</div>`;
+}
+
+function monthStats(m, recs) {
+  const n = daysIn(m), today = dkey(new Date()); const st = { 出勤: 0, 請假: 0, 未打卡: 0 };
+  for (let d = 1; d <= n; d++) {
+    const ds = `${m}-${pad(d)}`, r = recs[ds];
+    if (r && r.type === '出勤' && (r.in || r.out)) st.出勤++;
+    else if (r && r.type !== '出勤' && r.part) { st.請假 += 0.5; if (r.in || r.out) st.出勤 += 0.5; }
+    else if (r && r.type !== '出勤') st.請假++;
+    else if (ds < today && !isWeekend(ds)) st.未打卡++;
+  }
+  return st;
+}
+
+function viewRec() {
+  const m = S.month, [y, mo] = m.split('-').map(Number), n = daysIn(m), today = dkey(new Date());
+  const st = monthStats(m, S.recs);
+  let rows = '';
+  for (let d = 1; d <= n; d++) {
+    const ds = `${m}-${pad(d)}`, r = S.recs[ds], wk = isWeekend(ds), g = new Date(ds + 'T00:00').getDay();
+    const tot = r ? workMins(r.in, r.out) : null;
+    const totTag = tot != null ? `<span class="tot ${badRec(r, tot) ? 'short' : ''}">${fmtMins(tot)}</span>` : '';
+    let mid = '';
+    if (r && r.type !== '出勤') mid = `<span class="badge" style="--c:${T[r.type]?.c || '#555'}">${esc(dispLabel(r))}</span> ${r.in || r.out ? `<small>${r.in || '--:--'} – ${r.out || '--:--'}</small>` : ''}${totTag}`;
+    else if (r && (r.in || r.out)) mid = `${r.in || '<span class="miss">--:--</span>'} – ${r.out || (ds < today ? '<span class="miss">--:--</span>' : '--:--')}${totTag}`;
+    else if (ds < today && !wk) mid = '<span class="miss">未打卡，點此補登</span>';
+    rows += `<button class="day ${wk ? 'wk' : ''} ${ds === today ? 'today' : ''} ${ds > today ? 'future' : ''}" data-edit="${ds}">
+      <div class="d"><b>${d}</b><span>${WD[g]}</span></div><div class="mid">${mid}</div><span class="arrow">›</span></button>`;
+  }
+  return `<div class="mnav"><button data-month="-1">‹</button><b>${y}年${mo}月</b><button data-month="1">›</button></div>
+    <div class="stats"><div class="stat"><b>${st.出勤}</b><span>出勤天數</span></div><div class="stat"><b>${st.請假}</b><span>請假/休假</span></div>
+      <div class="stat"><b style="color:${st.未打卡 ? 'var(--danger)' : 'inherit'}">${st.未打卡}</b><span>未打卡</span></div></div>
+    ${st.未打卡 ? `<button class="big full" style="width:100%;margin-bottom:12px" data-act="batch">批次登記未打卡的 ${st.未打卡} 天<span class="s">一次套用約定上下班時間或假別</span></button>` : ''}
+    <div class="days">${rows}</div>`;
+}
+
+function openEdit(ds) {
+  const r = { ...(S.recs[ds] || { type: '出勤', in: '', out: '', note: '' }) };
+  const g = new Date(ds + 'T00:00');
+  let type = r.type, part = r.part || '';
+  const bg = document.createElement('div'); bg.className = 'sheet-bg';
+  const draw = () => {
+    bg.innerHTML = `<form class="sheet" id="editForm" style="max-height:92vh;overflow:auto">
+      <h3>${g.getMonth() + 1}月${g.getDate()}日（${WD[g.getDay()]}）</h3>
+      <div class="sec">狀態</div>
+      <div class="chips" style="margin-bottom:14px">${TYPES.map(t => `<button type="button" class="chip ${type === t.k ? 'on' : ''}" style="--c:${t.c}" data-etype="${t.k}">${t.k}</button>`).join('')}</div>
+      ${HALF.includes(type) ? `<div style="margin:-4px 0 14px">${segHtml(part, T[type].c, 'data-epart')}</div>` : ''}
+      <div class="row2">
+        <div class="field"><label for="eIn">上班時間${type !== '出勤' ? '（選填）' : ''}</label><input id="eIn" type="time" name="in" value="${r.in || ''}"></div>
+        <div class="field"><label for="eOut">下班時間${type !== '出勤' ? '（選填）' : ''}</label><input id="eOut" type="time" name="out" value="${r.out || ''}"></div>
+      </div>
+      <div id="hint" class="note" style="margin:-2px 0 12px"></div>
+      <div class="field"><label for="eNote">備註（選填；國定假日、天災假會把備註顯示在總表，例：端午、颱風假）</label><input id="eNote" name="note" value="${esc(r.note || '')}" maxlength="20"></div>
+      <button class="big full" style="width:100%;margin:6px 0 10px">儲存</button>
+      <div class="row2"><button type="button" class="ghost" data-close>取消</button>
+        <button type="button" class="ghost danger" data-clear ${S.recs[ds] ? '' : 'disabled style="opacity:.4"'}>清除這天</button></div>
+    </form>`;
+  };
+  const hint = () => { const f = bg.querySelector('form'), h = bg.querySelector('#hint'); if (!f || !h) return;
+    const m = workMins(f.in.value, f.out.value), rr = { part }; h.hidden = m == null;
+    h.innerHTML = m == null ? '' : `當日出勤時數 <b style="color:${badRec(rr, m) ? 'var(--danger)' : 'var(--pri)'}">${fmtMins(m)}</b>${badRec(rr, m) ? `　不在 ${rangeText(rr)} 範圍內，請確認上下班時間` : ''}`; };
+  draw(); hint();
+  bg.addEventListener('input', hint);
+  bg.addEventListener('click', async e => {
+    const f = bg.querySelector('form');
+    if (e.target === bg || e.target.closest('[data-close]')) return bg.remove();
+    const et = e.target.closest('[data-etype]');
+    if (et) { r.in = f.in.value; r.out = f.out.value; r.note = f.note.value; type = et.dataset.etype; if (!HALF.includes(type)) part = ''; draw(); hint(); return; }
+    const ep = e.target.closest('[data-epart]');
+    if (ep) { r.note = f.note.value; part = ep.dataset.epart === 'full' ? '' : ep.dataset.epart; Object.assign(r, partTimes(part)); draw(); hint(); return; }
+    if (e.target.closest('[data-clear]') && S.recs[ds]) {
+      if (!(await ask('確定清除這天的紀錄？'))) return;
+      delete S.recs[ds]; bg.remove(); render();
+      try { await S.store.remove(S.me.id, ds); toast('已清除'); } catch (err) { toast('清除失敗：' + err.message); }
+    }
+  });
+  bg.addEventListener('submit', async e => {
+    e.preventDefault(); const f = e.target;
+    if (type === '出勤' && !f.in.value && !f.out.value) return toast('請至少填入上班或下班時間');
+    bg.remove(); await saveRec(ds, { type, part: type === '出勤' ? '' : part, in: f.in.value, out: f.out.value, note: f.note.value.trim() }); toast('已儲存');
+  });
+  document.body.appendChild(bg);
+}
+
+// 批次登記：把本月尚未登記的平日一次填上約定上下班時間或某個假別
+function openBatch() {
+  const m = S.month, n = daysIn(m), today = dkey(new Date());
+  const days = [];
+  for (let d = 1; d <= n; d++) { const ds = `${m}-${pad(d)}`; if (ds < today && !isWeekend(ds) && !S.recs[ds]) days.push(ds); }
+  let type = '出勤', part = '';
+  const bg = document.createElement('div'); bg.className = 'sheet-bg';
+  const draw = (checked = new Set(days)) => {
+    bg.innerHTML = `<form class="sheet" id="batchForm" style="max-height:88vh;overflow:auto">
+      <h3>批次登記</h3>
+      <div class="sec">狀態</div>
+      <div class="chips" style="margin-bottom:12px">${TYPES.map(t => `<button type="button" class="chip ${type === t.k ? 'on' : ''}" style="--c:${t.c}" data-btype="${t.k}">${t.k}</button>`).join('')}</div>
+      ${HALF.includes(type) ? `<div style="margin:-2px 0 12px">${segHtml(part, T[type].c, 'data-bpart')}</div>` : ''}
+      ${type === '出勤' ? `<div class="note" style="margin:0 0 12px">會以約定出勤時間 ${STD_IN}–${STD_OUT} 登記；個別日期之後仍可點進去修改。</div>` : ''}
+      <div class="sec">日期（已登記的日子不會被覆蓋）</div>
+      <div class="chips" style="margin-bottom:14px">${days.map(ds => `<label class="chip ${checked.has(ds) ? 'on' : ''}" style="cursor:pointer">
+        <input type="checkbox" value="${ds}" ${checked.has(ds) ? 'checked' : ''} hidden>${+ds.slice(8)}日（${WD[new Date(ds + 'T00:00').getDay()]}）</label>`).join('')}</div>
+      <button class="big full" style="width:100%;margin-bottom:10px">登記選取的日期</button>
+      <button type="button" class="ghost" style="width:100%" data-close>取消</button></form>`;
+  };
+  const picked = () => new Set([...bg.querySelectorAll('input[type=checkbox]:checked')].map(i => i.value));
+  draw();
+  bg.addEventListener('change', e => { if (e.target.type === 'checkbox') e.target.parentElement.classList.toggle('on', e.target.checked); });
+  bg.addEventListener('click', e => {
+    if (e.target === bg || e.target.closest('[data-close]')) return bg.remove();
+    const bt = e.target.closest('[data-btype]'); if (bt) { const c = picked(); type = bt.dataset.btype; if (!HALF.includes(type)) part = ''; draw(c); }
+    const bp = e.target.closest('[data-bpart]'); if (bp) { const c = picked(); part = bp.dataset.bpart === 'full' ? '' : bp.dataset.bpart; draw(c); }
+  });
+  bg.addEventListener('submit', async e => {
+    e.preventDefault(); const sel = [...picked()].sort(); if (!sel.length) return toast('請至少選一天');
+    bg.remove(); toast('登記中…');
+    for (const ds of sel) await saveRec(ds, type === '出勤' ? { type, part: '', in: STD_IN, out: STD_OUT } : { type, part, ...partTimes(part) });
+    toast(`已登記 ${sel.length} 天`);
+  });
+  document.body.appendChild(bg);
+}
+
+function viewAdmin() {
+  const [y, mo] = S.adminMonth.split('-').map(Number);
+  return `<div class="mnav"><button data-amonth="-1">‹</button><b>${y}年${mo}月 總表</b><button data-amonth="1">›</button></div>
+    <div class="card"><button class="big full" style="width:100%" data-act="export">匯出 Excel 大總表<span class="s">全員整月・A4 橫式一頁，可直接送 DocuSign 簽核</span></button></div>
+    <div class="card" id="adminTable"><div style="color:var(--sub)">讀取中…</div></div>
+    <div class="card"><div class="sec">人員名單</div>
+      ${S.people.map(p => `<div class="prow ${p.active ? '' : 'off'}"><span>${esc(p.name)}${p.active ? '' : '（已停用）'}</span>
+        <span><button class="link" data-rename="${esc(p.id)}">改名</button><button class="link" data-toggle="${esc(p.id)}">${p.active ? '停用' : '啟用'}</button></span></div>`).join('')}
+      <div style="font-size:12px;color:var(--sub);margin-top:8px">停用的人不會出現在登入名單；有出勤紀錄的月份仍會列在總表。</div></div>`;
+}
+
+async function refreshAdmin() {
+  const m = S.adminMonth; const box = document.getElementById('adminTable'); if (!box) return;
+  try {
+    const recs = await S.store.listMonth(m);
+    if (S.adminMonth !== m || !document.getElementById('adminTable')) return;
+    const by = {}; recs.forEach(r => (by[r.pid] ||= {})[r.date] = r);
+    const list = S.people.filter(p => p.active || by[p.id]);
+    box.innerHTML = `<table class="mini"><tr><th>姓名</th><th>出勤</th><th>請假</th><th>未打卡</th><th>時數異常</th></tr>
+      ${list.map(p => { const recsP = by[p.id] || {}, s = monthStats(m, recsP);
+        const bad = Object.values(recsP).filter(r => badRec(r, workMins(r.in, r.out))).length;
+        return `<tr><td>${esc(p.name)}</td><td>${s.出勤}</td><td>${s.請假}</td><td style="color:${s.未打卡 ? 'var(--danger)' : 'inherit'}">${s.未打卡}</td>
+          <td style="color:${bad ? 'var(--danger)' : 'inherit'}">${bad}</td></tr>`; }).join('')}
+    </table><div style="font-size:12px;color:var(--sub);margin-top:8px">「未打卡」＝已過的平日沒有紀錄；「時數異常」＝出勤時數不在 ${fmtMins(MIN_DAY)}–${fmtMins(MAX_DAY)} 之間。匯出前可提醒同仁修正。</div>`;
+  } catch (e) { box.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+}
+
+// ================== Excel 匯出（ExcelJS） ==================
+async function saveFile(buf, name) {
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  let dl = null; try { dl = await window.claude?.use?.('downloads'); } catch {}
+  if (dl) { try { await dl.save({ filename: name, data: buf }); toast('已匯出 ' + name); } catch (e) { if (e.code !== 'declined') toast('無法下載：' + e.message); } return; }
+  const file = new File([blob], name, { type: blob.type });
+  if (/iPhone|iPad|Android/i.test(navigator.userAgent) && navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob); const link = document.createElement('a');
+  link.href = url; link.download = name; document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast('已匯出 ' + name);
+}
+
+async function exportExcel(m) {
+  if (!window.ExcelJS) return toast('Excel 元件載入中，請稍候再試');
+  toast('產生中…');
+  const [y, mo] = m.split('-').map(Number), n = daysIn(m);
+  const [people, recs] = await Promise.all([S.store.listPeople(), S.store.listMonth(m)]);
+  const by = {}; recs.forEach(r => (by[r.pid] ||= {})[r.date] = r);
+  const list = people.filter(p => p.active || by[p.id]).sort(byOrder);
+  const SUM = ['出勤', '休假', '事假', '病假', '特休', '公假', '國定假日', '天災假'];
+  const SIGN = 3, C0 = 4, CS = C0 + n, LAST = CS + SUM.length - 1, TOTC = LAST + 1; // A 姓名、B 項目、C 簽署（DocuSign）、D 起日期
+
+  const wb = new ExcelJS.Workbook(); wb.creator = '出勤打卡';
+  const ws = wb.addWorksheet(`${y}年${mo}月`, {
+    pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1, horizontalCentered: true,
+      margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } },
+    views: [{ state: 'frozen', xSplit: 3, ySplit: 3 }],
+  });
+  const thin = { style: 'thin', color: { argb: 'FF9CA3AF' } }, med = { style: 'medium', color: { argb: 'FF4B5563' } };
+  const border = { top: thin, left: thin, bottom: thin, right: thin };
+  const fill = hex => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + hex } });
+  const font = { name: 'Microsoft JhengHei', size: 8 };
+  const center = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+  ws.getColumn(1).width = 9; ws.getColumn(2).width = 4.2; ws.getColumn(SIGN).width = 15;
+  for (let d = 1; d <= n; d++) ws.getColumn(C0 + d - 1).width = 5.3;
+  SUM.forEach((_, i) => ws.getColumn(CS + i).width = 4.6);
+  ws.getColumn(TOTC).width = 7;
+
+  ws.mergeCells(1, 1, 1, TOTC);
+  Object.assign(ws.getCell(1, 1), { value: `${CFG.companyName || ''} ${y}年${mo}月 出勤總表`.trim(),
+    font: { ...font, size: 14, bold: true }, alignment: { horizontal: 'center', vertical: 'middle' } });
+  ws.getRow(1).height = 26;
+
+  const h2 = ws.getRow(2), h3 = ws.getRow(3);
+  ws.mergeCells(2, 1, 3, 1); ws.mergeCells(2, 2, 3, 2); ws.mergeCells(2, SIGN, 3, SIGN); h2.getCell(1).value = '姓名'; h2.getCell(SIGN).value = '簽署';
+  for (let d = 1; d <= n; d++) { const g = new Date(y, mo - 1, d).getDay(); h2.getCell(C0 + d - 1).value = d; h3.getCell(C0 + d - 1).value = WD[g]; }
+  ws.mergeCells(2, CS, 2, LAST); h2.getCell(CS).value = '當月統計（天）';
+  SUM.forEach((s, i) => h3.getCell(CS + i).value = s === '出勤' ? '出勤' : T[s].short);
+  ws.mergeCells(2, TOTC, 3, TOTC); h2.getCell(TOTC).value = '總工時';
+  [h2, h3].forEach(row => { row.height = 16; for (let c = 1; c <= TOTC; c++) {
+    const cell = row.getCell(c); cell.font = { ...font, bold: true }; cell.alignment = center; cell.border = border; cell.fill = fill('E5E7EB'); } });
+  for (let d = 1; d <= n; d++) { const g = new Date(y, mo - 1, d).getDay(); if (g === 0 || g === 6) { h2.getCell(C0 + d - 1).fill = fill('D1D5DB'); h3.getCell(C0 + d - 1).fill = fill('D1D5DB'); } }
+
+  let r = 4;
+  for (const p of list) {
+    const a = ws.getRow(r), b = ws.getRow(r + 1), t = ws.getRow(r + 2); a.height = b.height = t.height = 15;
+    ws.mergeCells(r, 1, r + 2, 1); a.getCell(1).value = p.name; ws.mergeCells(r, SIGN, r + 2, SIGN);
+    a.getCell(2).value = '上班'; b.getCell(2).value = '下班'; t.getCell(2).value = '總計';
+    const cnt = Object.fromEntries(SUM.map(s => [s, 0])); let sumMin = 0; const badCells = new Set(), halfCells = new Set();
+    for (let d = 1; d <= n; d++) {
+      const ds = `${m}-${pad(d)}`, rec = (by[p.id] || {})[ds], c = C0 + d - 1, wk = isWeekend(ds);
+      const top = a.getCell(c), bot = b.getCell(c), tot = t.getCell(c), cells = [top, bot, tot];
+      if (rec && rec.type !== '出勤') {
+        cnt[rec.type] = (cnt[rec.type] || 0) + (rec.part ? 0.5 : 1);
+        if (rec.part && (rec.in || rec.out)) cnt['出勤'] += 0.5;
+        if (!rec.in && !rec.out) { ws.mergeCells(r, c, r + 2, c); top.value = rec.part ? `${cellLabel(rec)}(${rec.part === 'am' ? '上' : '下'})` : cellLabel(rec); }
+        else { top.value = rec.in || cellLabel(rec); bot.value = rec.out || cellLabel(rec); }
+        if (T[rec.type]?.fill) cells.forEach(x => x.fill = fill(T[rec.type].fill));
+      } else if (rec) {
+        if (rec.in || rec.out) cnt['出勤']++;
+        top.value = rec.in || ''; bot.value = rec.out || '';
+        if (wk) cells.forEach(x => x.fill = fill('F3F4F6'));
+      } else if (wk) cells.forEach(x => x.fill = fill('F3F4F6'));
+      const mins = rec ? workMins(rec.in, rec.out) : null;
+      if (mins != null) { tot.value = fmtMins(mins); sumMin += mins; if (badRec(rec, mins)) badCells.add(c); }
+      if (rec?.part && mins != null) { tot.value = `${cellLabel(rec)}(${rec.part === 'am' ? '上' : '下'})`; halfCells.add(c); }
+    }
+    SUM.forEach((s, i) => { ws.mergeCells(r, CS + i, r + 2, CS + i); a.getCell(CS + i).value = cnt[s] || 0; });
+    ws.mergeCells(r, TOTC, r + 2, TOTC); a.getCell(TOTC).value = fmtMins(sumMin);
+    [a, b, t].forEach((row, k) => { for (let c = 1; c <= TOTC; c++) { const cell = row.getCell(c);
+      cell.font = c === 1 ? { ...font, size: 9, bold: true } : c === 2 ? { ...font, size: 7, color: { argb: 'FF6B7280' } }
+        : (k === 2 && c >= C0 && c < CS) ? { ...font, bold: true, color: { argb: badCells.has(c) ? 'FFDC2626' : 'FF0F766E' } } : font;
+      cell.alignment = (k === 2 && halfCells.has(c)) ? { ...center, wrapText: false, shrinkToFit: true } : center;
+      cell.border = { left: thin, right: thin, top: k === 0 ? med : thin, bottom: k === 2 ? med : thin }; } });
+    r += 3;
+  }
+
+  // 圖例 + 說明 + 簽核
+  r += 1;
+  ws.mergeCells(r, 1, r, 2); Object.assign(ws.getCell(r, 1), { value: '圖例', font: { ...font, bold: true }, alignment: center });
+  let c = C0;
+  for (const t of TYPES.filter(t => t.fill)) {
+    ws.mergeCells(r, c, r, c + 1);
+    Object.assign(ws.getCell(r, c), { value: t.k, font, alignment: center, fill: fill(t.fill), border });
+    c += 2;
+  }
+  ws.mergeCells(r, c, r, c + 1); Object.assign(ws.getCell(r, c), { value: '週末', font, alignment: center, fill: fill('F3F4F6'), border });
+  ws.mergeCells(r, c + 3, r, TOTC - 12);
+  Object.assign(ws.getCell(r, c + 3), { value: `總計＝下班－上班－午休；紅字＝時數不足或超過；(上)(下)＝上午／下午請假`,
+    font: { ...font, color: { argb: 'FF6B7280' } }, alignment: { vertical: 'middle' } });
+  ws.mergeCells(r, TOTC - 11, r, TOTC);
+  Object.assign(ws.getCell(r, TOTC - 11), { value: `製表日期：${dkey(new Date())}　　主管簽核：＿＿＿＿＿＿＿＿`, font: { ...font, size: 9 }, alignment: { horizontal: 'right', vertical: 'middle' } });
+  ws.pageSetup.printArea = `A1:${ws.getColumn(TOTC).letter}${r}`;
+
+  await saveFile(await wb.xlsx.writeBuffer(), `Attendance_${y}-${pad(mo)}.xlsx`);
+}
+
+// ================== 事件 ==================
+async function choose(id) {
+  const p = S.people.find(x => x.id === id); if (!p) return;
+  try {
+    if (!p.hasPin) {
+      const a = await askPin(`${p.name}，請設定 4 位數密碼`, '之後在其他手機登入、或清除瀏覽器資料後需要輸入'); if (!a) return;
+      const b = await askPin('請再輸入一次確認'); if (!b) return;
+      if (a !== b) return toast('兩次輸入的密碼不一樣，請重新設定');
+      const r = await S.store.setPin(p.id, await pinHash(p.id, a));
+      if (r === 'exists') { p.hasPin = true; toast('這個名字已經設定過密碼'); return choose(id); }
+      p.hasPin = true; toast('密碼設定完成');
+    } else {
+      for (let tries = 0; ; tries++) {
+        const pin = await askPin(`輸入「${p.name}」的密碼`, tries ? '密碼錯誤，請再試一次。忘記密碼請聯絡管理者重設' : '忘記密碼請聯絡管理者重設');
+        if (!pin) return;
+        if (await S.store.verifyPin(p.id, await pinHash(p.id, pin))) break;
+      }
+    }
+  } catch (e) { return toast('驗證失敗：' + (e.message || e)); }
+  lsSet(ME_KEY, p.id); S.me = p; S.tab = 'punch'; S.recs = {};
+  await loadMonth(mkey(new Date())); render();
+}
+
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'addForm') return;
+  e.preventDefault(); const name = e.target.n.value.trim(); if (!name) return toast('請輸入名字');
+  if (S.people.some(p => p.name === name)) return toast('名單裡已經有這個名字了');
+  const p = { id: newId(), name, active: true, order: S.people.length + 1 };
+  try { await S.store.savePerson(p); S.people.push(p); S.people.sort(byOrder); renderPicker(); choose(p.id); }
+  catch (err) { toast('加入失敗：' + err.message); }
+});
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act],[data-tab],[data-pick],[data-part],[data-month],[data-amonth],[data-edit],[data-me],[data-rename],[data-toggle]'); if (!el) return;
+  const d = el.dataset, today = dkey(new Date()), now = hm(new Date());
+  if (d.me) return choose(d.me);
+  if (d.tab) { S.tab = d.tab; if (d.tab === 'rec') await loadMonth(S.month); render(); window.scrollTo(0, 0); }
+  else if (d.pick) { S.pickType = d.pick; S.pickPart = ''; render(); }
+  else if (d.part) { if (!S.pickType) S.pickType = S.recs[today]?.type || '出勤'; S.pickPart = d.part === 'full' ? '' : d.part; render(); }
+  else if (d.month) { S.month = shiftMonth(S.month, +d.month); await loadMonth(S.month); render(); }
+  else if (d.amonth) { S.adminMonth = shiftMonth(S.adminMonth, +d.amonth); render(); }
+  else if (d.edit) openEdit(d.edit);
+  else if (d.rename) {
+    const p = S.people.find(x => x.id === d.rename); const name = await askText('修改名字', p.name); if (!name || name === p.name) return;
+    p.name = name; if (S.me?.id === p.id) S.me.name = name; await S.store.savePerson(p); render(); toast('已更新');
+  } else if (d.toggle) {
+    const p = S.people.find(x => x.id === d.toggle);
+    if (p.active && !(await ask(`停用「${p.name}」？停用後不會出現在登入名單。`, '停用'))) return;
+    p.active = !p.active; await S.store.savePerson(p); render();
+  }
+  else if (d.act === 'in') {
+    const r = S.recs[today]; if (r?.in && !(await ask(`今天已於 ${r.in} 打過上班卡，要改成現在 ${now} 嗎？`))) return;
+    await saveRec(today, { type: '出勤', in: now }); S.pickType = null; render(); toast(`上班打卡成功 ${now}`);
+  } else if (d.act === 'out') {
+    const r = S.recs[today]; if (r?.out && !(await ask(`今天已於 ${r.out} 打過下班卡，要改成現在 ${now} 嗎？`))) return;
+    await saveRec(today, { type: '出勤', out: now }); S.pickType = null; render(); toast(`下班打卡成功 ${now}，辛苦了！`);
+  } else if (d.act === 'leave') {
+    const t = S.pickType || S.recs[today]?.type, pt = HALF.includes(t) ? S.pickPart : '';
+    await saveRec(today, { type: t, part: pt, ...partTimes(pt) }); S.pickType = null; S.pickPart = ''; render();
+    toast(pt ? `已登記今日${PART_TEXT[pt]}${t}` : `已登記今日為 ${t}`);
+  } else if (d.act === 'batch') openBatch();
+  else if (d.act === 'chpin') {
+    const o = await askPin('輸入目前的密碼'); if (!o) return;
+    const n1 = await askPin('輸入新的 4 位數密碼'); if (!n1) return;
+    const n2 = await askPin('再輸入一次新密碼'); if (!n2) return;
+    if (n1 !== n2) return toast('兩次輸入的新密碼不一樣');
+    try { toast(await S.store.changePin(S.me.id, await pinHash(S.me.id, o), await pinHash(S.me.id, n1)) ? '密碼已更新' : '目前的密碼不正確'); }
+    catch (e) { toast('更新失敗：' + e.message); }
+  }
+  else if (d.act === 'resetdemo') {
+    if (!(await ask('清除所有試用時的操作，回到初始範例資料？', '重設'))) return;
+    lsSet(DEMO_KEY, null); lsSet(ME_KEY, null); location.reload();
+  }
+  else if (d.act === 'export') exportExcel(S.adminMonth).catch(err => toast('匯出失敗：' + err.message));
+  else if (d.act === 'switch') {
+    if (!(await ask('切換成其他人？這支手機會回到選名字的畫面。', '切換'))) return;
+    lsSet(ME_KEY, null); S.me = null; S.recs = {}; await loadPeople().catch(() => {}); render();
+  }
+});
+
+setInterval(() => { const c = document.getElementById('clock'); if (!c) return; const n = new Date();
+  c.textContent = `${hm(n)}:${pad(n.getSeconds())}`;
+  if (S.lastDay && S.lastDay !== dkey(n)) { S.lastDay = dkey(n); loadMonth(mkey(n)).then(render); } }, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me) loadMonth(mkey(new Date())).then(render).catch(() => {}); });
+
+// ================== 啟動 ==================
+(async () => {
+  try {
+    if (!DEMO && lsGet(DEMO_KEY_PREFIX + 'used')) {   // 正式版第一次打開：清掉示範模式留在手機裡的資料
+      try { Object.keys(localStorage).filter(k => k.startsWith(DEMO_KEY_PREFIX)).forEach(k => localStorage.removeItem(k)); } catch {}
+      lsSet(ME_KEY, null);
+    }
+    if (DEMO) lsSet(DEMO_KEY_PREFIX + 'used', '1');
+    S.store = DEMO ? demoStore() : BACKEND === 'm365' ? m365Store() : await firebaseStore();
+    await loadPeople();
+  } catch (e) { $app.innerHTML = `<div class="center" style="padding:24px;text-align:center">無法連線到雲端資料庫：${esc(e.message)}<br>請確認網路後重新開啟。</div>`; return; }
+  const me = S.people.find(p => p.id === lsGet(ME_KEY) && p.active);
+  if (me) { S.me = me; S.lastDay = dkey(new Date()); await loadMonth(mkey(new Date())).catch(e => toast('讀取失敗：' + e.message)); }
+  render();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
