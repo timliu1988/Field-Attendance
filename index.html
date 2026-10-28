@@ -541,7 +541,7 @@ function openBatch() {
 function viewAdmin() {
   const [y, mo] = S.adminMonth.split('-').map(Number);
   return `<div class="mnav"><button data-amonth="-1">‹</button><b>${y}年${mo}月 總表</b><button data-amonth="1">›</button></div>
-    <div class="card"><button class="big full" style="width:100%" data-act="export">匯出 Excel 大總表<span class="s">全員整月・A4 橫式一頁，可直接送 DocuSign 簽核</span></button></div>
+    <div class="card"><button class="big full" style="width:100%" data-act="export">匯出 Excel 總表<span class="s">全員整月・A4 橫式一頁，可直接送 DocuSign 簽核</span></button></div>
     <div class="card" id="adminTable"><div style="color:var(--sub)">讀取中…</div></div>
     <div class="card"><div class="sec">人員名單</div>
       ${S.people.map(p => `<div class="prow ${p.active ? '' : 'off'}"><span>${esc(p.name)}${p.active ? '' : '（已停用）'}</span>
